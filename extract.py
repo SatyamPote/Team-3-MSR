@@ -1,4 +1,5 @@
-print("Updated.......")
+print("Updated.......2")
+import requests
 def extract_imdb_data():
     url = "https://www.imdb.com/chart/top"
     headers = {
