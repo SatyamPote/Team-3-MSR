@@ -5,15 +5,15 @@ from bs4 import BeautifulSoup
 def extract_imdb_data():
     url = "https://www.imdb.com/chart/top"
     headers = {
-        "Accept-Language": "en-US,en;q=0.9",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+        "Accept-Language": "en-US,en;q=0.9"
     }
 
     try:
         response = requests.get(url, headers=headers)
         print(f"Status Code: {response.status_code}")
-        print("First 1000 characters of the response:")
-        print(response.text[:1000])  # Debug: Check if HTML is loading
+        print("HTML Preview:")
+        print(response.text[:1000])  # show first part of page
 
         if response.status_code != 200:
             print("❌ IMDb page not reachable.")
@@ -21,24 +21,27 @@ def extract_imdb_data():
 
         soup = BeautifulSoup(response.text, 'html.parser')
         rows = soup.select('tbody.lister-list tr')
-        print(f"Found {len(rows)} rows.")  # Debug: Check if movie rows are found
+        print(f"Found rows: {len(rows)}")  # Debug check
 
         movies = []
-
         for row in rows[:10]:
-            title = row.find("td", class_="titleColumn").a.text.strip()
-            year = row.find("span", class_="secondaryInfo").text.strip("() ")
-            rating = row.find("td", class_="ratingColumn imdbRating").strong
-            rating = rating.text.strip() if rating else "N/A"
+            title_tag = row.find("td", class_="titleColumn").a
+            year_tag = row.find("span", class_="secondaryInfo")
+            rating_tag = row.find("td", class_="ratingColumn imdbRating").strong
 
-            movies.append({
-                "title": title,
-                "year": year,
-                "rating": rating
-            })
+            if title_tag and year_tag:
+                title = title_tag.text.strip()
+                year = year_tag.text.strip("() ")
+                rating = rating_tag.text.strip() if rating_tag else "N/A"
+
+                movies.append({
+                    "title": title,
+                    "year": year,
+                    "rating": rating
+                })
 
         return movies
     
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Exception occurred: {e}")
         return []
