@@ -1,4 +1,10 @@
 # extract.py
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Load environment variables from .env
+API_KEY = os.getenv("API_KEY")
+
 import requests
 import time
 import csv
