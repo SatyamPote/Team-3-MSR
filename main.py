@@ -3,7 +3,7 @@ from datetime import datetime
 from extract import extract_imdb_data
 
 def run_every_minute():
-    print("Starting TMDb fetch every 1 minute...\nPress Ctrl+C to stop.\n")
+    print("Starting fetch every 1 minute...\nPress Ctrl+C to stop.\n")
     try:
         while True:
             print("="*50)
