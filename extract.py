@@ -7,7 +7,7 @@ import random
 TMDB_API_KEY = "32958f16314b73597c8b327e9c3b19eb"
 
 def fetch_tmdb_movies(total=250):
-    print("Fetching data from IMDb (actually TMDb)...")
+    print("Fetching data from IMDb...")
     movies = []
     page = 1
     while len(movies) < total:
