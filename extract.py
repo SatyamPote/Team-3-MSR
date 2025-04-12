@@ -1,20 +1,55 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
+print("updated")
+import requests
+from bs4 import BeautifulSoup
 
-# Set up Chrome for headless browsing
-options = Options()
-options.headless = True  # Make Chrome run in the background (without opening a window)
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+def extract_imdb_data():
+    url = "https://www.imdb.com/chart/top"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+        "Accept-Language": "en-US,en;q=0.9"
+    }
 
-driver.get("https://www.imdb.com/chart/top")  # URL of IMDb Top 250
+    try:
+        response = requests.get(url, headers=headers)
+        print(f"Status Code: {response.status_code}")
+        if response.status_code != 200:
+            print("❌ IMDb page not reachable.")
+            return []
+        
+        print("HTML Length:", len(response.text))  # Check the length of the response body
+        print("HTML Preview:")
+        print(response.text[:1000])  # show first part of page for debugging
 
-# Example: Scrape the top movie titles
-movie_titles = driver.find_elements(By.XPATH, '//td[@class="titleColumn"]/a')
+        soup = BeautifulSoup(response.text, 'html.parser')
+        rows = soup.select('tbody.lister-list tr')
 
-for title in movie_titles:
-    print(title.text)
+        print(f"Found rows: {len(rows)}")  # Debug check
+        if not rows:
+            print("❌ No rows found. Please check the selectors.")
 
-driver.quit()  # Close the browser
+        movies = []
+        for row in rows[:10]:
+            title_tag = row.find("td", class_="titleColumn").a
+            year_tag = row.find("span", class_="secondaryInfo")
+            rating_tag = row.find("td", class_="ratingColumn imdbRating").strong
+
+            if title_tag and year_tag:
+                title = title_tag.text.strip()
+                year = year_tag.text.strip("() ")
+                rating = rating_tag.text.strip() if rating_tag else "N/A"
+
+                movies.append({
+                    "title": title,
+                    "year": year,
+                    "rating": rating
+                })
+
+        return movies
+    
+    except Exception as e:
+        print(f"Exception occurred: {e}")
+        return []
+
+# Test the function by calling it
+movies = extract_imdb_data()
+print(movies)
