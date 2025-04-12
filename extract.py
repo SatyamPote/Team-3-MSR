@@ -1,3 +1,4 @@
+print("🔧 extract_imdb_data() is running...")
 # extract.py
 import requests
 from bs4 import BeautifulSoup
