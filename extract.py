@@ -15,21 +15,30 @@ def extract_imdb_data():
         print("❌ Failed to fetch page:", response.status_code)
         return []
 
-    soup = BeautifulSoup(response.content, 'lxml')
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-    rows = soup.select('tbody.lister-list tr')
+    rows = soup.select("tbody.lister-list tr")
     movies = []
 
-    for row in rows[:10]:  # Top 10 movies
-        title = row.find("td", class_="titleColumn").a.text.strip()
-        year = row.find("span", class_="secondaryInfo").text.strip("() ")
-        rating_tag = row.find("td", class_="ratingColumn imdbRating").strong
-        rating = rating_tag.text.strip() if rating_tag else "N/A"
+    if not rows:
+        print("❌ IMDb structure changed or no rows found.")
+        return []
 
-        movies.append({
-            "title": title,
-            "year": year,
-            "rating": rating
-        })
+    for row in rows[:10]:  # Top 10 movies
+        try:
+            title_column = row.find("td", class_="titleColumn")
+            rating_column = row.find("td", class_="ratingColumn imdbRating")
+            title = title_column.a.text.strip()
+            year = title_column.span.text.strip("() ")
+            rating = rating_column.strong.text.strip() if rating_column.strong else "N/A"
+
+            movies.append({
+                "title": title,
+                "year": year,
+                "rating": rating
+            })
+        except Exception as e:
+            print("⚠️ Skipped a row due to error:", e)
+            continue
 
     return movies
