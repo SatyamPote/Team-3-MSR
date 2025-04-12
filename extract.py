@@ -1,8 +1,4 @@
-print("🔧 extract_imdb_data() is running...")
-# extract.py
-import requests
-from bs4 import BeautifulSoup
-
+print("Updated.......")
 def extract_imdb_data():
     url = "https://www.imdb.com/chart/top"
     headers = {
@@ -13,16 +9,20 @@ def extract_imdb_data():
     try:
         response = requests.get(url, headers=headers)
         print(f"Status Code: {response.status_code}")
-        print("HTML Preview:")
-        print(response.text[:1000])  # show first part of page
-
         if response.status_code != 200:
             print("❌ IMDb page not reachable.")
             return []
+        
+        print("HTML Length:", len(response.text))  # Check the length of the response body
+        print("HTML Preview:")
+        print(response.text[:1000])  # show first part of page for debugging
 
         soup = BeautifulSoup(response.text, 'html.parser')
         rows = soup.select('tbody.lister-list tr')
+
         print(f"Found rows: {len(rows)}")  # Debug check
+        if not rows:
+            print("❌ No rows found. Please check the selectors.")
 
         movies = []
         for row in rows[:10]:
@@ -46,3 +46,4 @@ def extract_imdb_data():
     except Exception as e:
         print(f"Exception occurred: {e}")
         return []
+
