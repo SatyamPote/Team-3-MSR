@@ -1,5 +1,6 @@
-print("Updated.......2")
 import requests
+from bs4 import BeautifulSoup
+
 def extract_imdb_data():
     url = "https://www.imdb.com/chart/top"
     headers = {
@@ -48,3 +49,6 @@ def extract_imdb_data():
         print(f"Exception occurred: {e}")
         return []
 
+# Test the function by calling it
+movies = extract_imdb_data()
+print(movies)
