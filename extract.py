@@ -1,56 +1,52 @@
+# extract.py
 import requests
-import pandas as pd
-import sqlite3
+import time
+import csv
+import os
 from datetime import datetime
-import random
+from dotenv import load_dotenv
 
-API_KEY = '32958f16314b73597c8b327e9c3b19eb'
+# Load the API key from .env file
+load_dotenv()
+API_KEY = os.getenv("API_KEY")
 
-def fetch_tmdb_data():
-    url = f"https://api.themoviedb.org/3/movie/popular?api_key={API_KEY}&language=en-US&page=1"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()["results"]
-    else:
-        print("Failed to fetch data:", response.status_code)
-        return []
+def get_video_id(video_url):
+    if "watch?v=" in video_url:
+        return video_url.split("watch?v=")[-1].split("&")[0]
+    elif "youtu.be/" in video_url:
+        return video_url.split("youtu.be/")[-1].split("?")[0]
+    return None
 
-def transform_data(raw_data):
-    movies = []
-    for movie in raw_data:
-        movies.append({
-            "id": movie["id"],
-            "title": movie["title"],
-            "release_date": movie["release_date"],
-            "genre_ids": movie["genre_ids"],
-            "vote_average": movie["vote_average"]
-        })
-    return movies
+def get_video_statistics(video_id):
+    url = f"https://www.googleapis.com/youtube/v3/videos?part=statistics&id={video_id}&key={API_KEY}"
+    response = requests.get(url).json()
+    if "items" in response and response["items"]:
+        stats = response["items"][0]["statistics"]
+        return int(stats.get("likeCount", 0)), int(stats.get("commentCount", 0))
+    return 0, 0
 
-def save_to_csv(data):
-    df = pd.DataFrame(data)
+def extract_data(video_url):
+    video_id = get_video_id(video_url)
 
-    # Shuffle to simulate changing data
-    df = df.sample(frac=1).reset_index(drop=True)
+    if not video_id:
+        print("Invalid YouTube URL")
+        return
 
-    # Generate filename with current timestamp
-    now = datetime.now()
-    filename = f"imdb_{now.day}_D_{now.hour}_H_{now.minute}_M_{now.second}_S.csv"
-    df.to_csv(filename, index=False)
-    print(f"✅ Data saved to CSV: {filename}")
-    return df
+    print("\n⏳ Collecting data every 1 minute... Press Ctrl+C to stop.\n")
 
-def save_to_database(dataframe):
-    conn = sqlite3.connect("imdb_data.db")
+    try:
+        while True:
+            timestamp = datetime.now().strftime("%j-%H-%M-%S")
+            likes, comments = get_video_statistics(video_id)
 
-    # Convert list columns to strings (e.g., genre_ids)
-    dataframe["genre_ids"] = dataframe["genre_ids"].apply(lambda x: str(x))
+            filename = f"imdb_{timestamp}.csv"
+            with open(filename, mode='w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(["Timestamp", "Video ID", "Likes", "Total Comments"])
+                writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), video_id, likes, comments])
 
-    dataframe.to_sql("imdb_movies", conn, if_exists="replace", index=False)
-    conn.close()
+            print(f"✅ Data saved to {filename} at {datetime.now().strftime('%H:%M:%S')}")
+            time.sleep(60)
 
-def extract_imdb_data():
-    raw_data = fetch_tmdb_data()
-    transformed_data = transform_data(raw_data)
-    df = save_to_csv(transformed_data)
-    save_to_database(df)
+    except KeyboardInterrupt:
+        print("\n🛑 Monitoring stopped by user.")
