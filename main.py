@@ -1,9 +1,18 @@
-from extract import fetch_top_250_tmdb
-import pandas as pd
+import time
+from datetime import datetime
+from extract import extract_imdb_data
+
+def run_every_minute():
+    print("Starting TMDb fetch every 1 minute...\nPress Ctrl+C to stop.\n")
+    try:
+        while True:
+            print("="*50)
+            print(f"Running at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            extract_imdb_data()
+            print("Waiting for 60 seconds...\n")
+            time.sleep(60)
+    except KeyboardInterrupt:
+        print("\nStopped by user.")
 
 if __name__ == "__main__":
-    print("Extracting data using IMDb API...")
-    movies = fetch_top_250_tmdb()
-    df = pd.DataFrame(movies)
-    df.to_csv("top_250_imdb.csv", index=False)
-    print("Data saved to top_250_imdb.csv ✅")
+    run_every_minute()
