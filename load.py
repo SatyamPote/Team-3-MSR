@@ -1,46 +1,43 @@
 # load.py
-import csv
 import os
 import sqlite3
-from datetime import datetime
 
-def load_to_csv(data, filename="output/movies_data.csv"):
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    write_header = not os.path.exists(filename)
-
-    with open(filename, mode='a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=["Timestamp", "Title", "Year", "Rating"])
-        if write_header:
-            writer.writeheader()
-
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        for row in data:
-            writer.writerow({
-                "Timestamp": timestamp,
-                **row
-            })
-
-def load_to_sqlite(data, db_file="output/movies.db"):
+def load_metric_to_sqlite(data, db_file="output/video_metrics.db"):
     os.makedirs(os.path.dirname(db_file), exist_ok=True)
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
 
     c.execute('''
-        CREATE TABLE IF NOT EXISTS movies (
+        CREATE TABLE IF NOT EXISTS video_metrics (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT,
-            title TEXT,
-            year INTEGER,
-            rating REAL
+            video_id TEXT,
+            views INTEGER,
+            likes INTEGER,
+            comments INTEGER
         )
     ''')
 
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    for row in data:
-        c.execute('''
-            INSERT INTO movies (timestamp, title, year, rating)
-            VALUES (?, ?, ?, ?)
-        ''', (timestamp, row['Title'], row['Year'], row['Rating']))
+    # Check if entry for this timestamp & video_id exists
+    c.execute('''
+        SELECT id FROM video_metrics
+        WHERE timestamp = ? AND video_id = ?
+    ''', (data["timestamp"], data["video_id"]))
+    row = c.fetchone()
+
+    if row:
+        # Update only the relevant metric
+        c.execute(f'''
+            UPDATE video_metrics
+            SET {data["metric"]} = ?
+            WHERE id = ?
+        ''', (data["value"], row[0]))
+    else:
+        # Insert new row with one metric, rest NULL
+        c.execute(f'''
+            INSERT INTO video_metrics (timestamp, video_id, {data["metric"]})
+            VALUES (?, ?, ?)
+        ''', (data["timestamp"], data["video_id"], data["value"]))
 
     conn.commit()
     conn.close()
